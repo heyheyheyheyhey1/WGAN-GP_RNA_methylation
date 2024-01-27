@@ -16,24 +16,24 @@ from sklearn.svm import SVC
 from sklearn.metrics import *
 
 CV_DIR = os.path.join("CV")
-MODEL_DIR = os.path.join("model")
+MODEL_DIR = 'path to your classification models'
 TUNING_DIR = os.path.join("TUNNING")
-DATA_DIR = os.path.join("data")
+DATA_DIR = 'path to your data'
 LATENT_DIM = 128
 CLASSIFIER_NAMES = ['SVM', 'GB', 'GNB', 'LR', 'RF']
-os_rates = [0.1, 0.3, 0.5, 0.9]
+os_rates = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
 generator = Generator(in_dim=LATENT_DIM, out_dim=1517)
-generator.load_state_dict(torch.load(os.path.join(MODEL_DIR, "wgangp", "generator", "generator_n_574_acc_0.494.pth")))
+generator.load_state_dict(torch.load("path to your GAN model"))
 generator.eval()
 
 if not os.path.exists(CV_DIR):
     os.makedirs(CV_DIR)
 for os_rate in os_rates:
     for name in CLASSIFIER_NAMES:
-        if not os.path.exists(os.path.join(MODEL_DIR, name,str(os_rate))):
-            os.makedirs(os.path.join(MODEL_DIR, name,str(os_rate)))
-        if not os.path.exists(os.path.join(TUNING_DIR, name,str(os_rate))):
-            os.makedirs(os.path.join(TUNING_DIR, name,str(os_rate)))
+        if not os.path.exists(os.path.join(MODEL_DIR, name, str(os_rate))):
+            os.makedirs(os.path.join(MODEL_DIR, name, str(os_rate)))
+        if not os.path.exists(os.path.join(TUNING_DIR, name, str(os_rate))):
+            os.makedirs(os.path.join(TUNING_DIR, name, str(os_rate)))
 
 selected_data = "selected_dataset.tsv"
 rnmts = "RNMT.list"
@@ -44,8 +44,8 @@ positive_genes = [line.rstrip('\n') for line in open(os.path.join("data", rnmts)
 negative_genes = set(all_genes).difference(positive_genes)  # 负样本
 
 selected_data["Y"] = [1 if idx in positive_genes else 0 for idx in selected_data.index.to_list()]
-test_positive_genes = [line.rstrip('\n') for line in open(os.path.join("data", "test_positive_genes.txt"))]
-test_negative_genes = [line.rstrip('\n') for line in open(os.path.join("data", "test_negative_genes.txt"))]
+test_positive_genes = [line.rstrip('\n') for line in open(os.path.join("path to your test positive samples"))]
+test_negative_genes = [line.rstrip('\n') for line in open(os.path.join("path to your test negative samples"))]
 train_positive_genes = set(positive_genes).difference(test_positive_genes)
 train_negative_genes = set(negative_genes).difference(test_negative_genes)
 train_positive_frame = selected_data.loc[list(train_positive_genes)]
@@ -216,7 +216,7 @@ def GM_tuning(n, X_train, y_train):
     return (gbm_tuning.best_params_)
 
 
-def train_one_epoch(X, Y, n,os_rate):
+def train_one_epoch(X, Y, n, os_rate):
     svm_tuning = SVM_tuning(n, X, Y)
     rf_tuning = RF_tuning(n, X, Y)
     gm_tuning = GM_tuning(n, X, Y)
@@ -260,7 +260,7 @@ def train_one_epoch(X, Y, n,os_rate):
         #     scores = cross_validate(estimator=classifier, X=X, y=Y, cv=10, scoring=scorings, n_jobs=12)
         model = classifier.fit(X, Y)
 
-        pickle.dump(model, open(os.path.join(MODEL_DIR, name,str(os_rate), f'round_{n}.sav'), 'wb'))
+        pickle.dump(model, open(os.path.join(MODEL_DIR, name, str(os_rate), f'round_{n}.sav'), 'wb'))
         # classifier_performance = {'Classifier': name,
         #                           'Accuracy': float(f'{scores["test_accuracy"].mean():.5f}'),
         #                           'Precision': float(f'{scores["test_precision"].mean():.5f}'),
@@ -289,6 +289,7 @@ def data_block_n(i, batch_size):
     out_x, out_y = shuffle(os_x, os_y)
     return out_x, out_y
 
+
 def test_data():
     test_positive_data = selected_data.loc[test_positive_genes].iloc[:, 0:-1].values
     test_negative_data = selected_data.loc[test_negative_genes].iloc[:, 0:-1].values
@@ -302,6 +303,7 @@ def test_data():
         y = np.concatenate([y0, y1], axis=0)
         yield x, y, i
 
+
 def main():
     for os_rate in os_rates:
         print(f"training under rate {os_rate}")
@@ -310,13 +312,13 @@ def main():
         batch_size = int(len(train_negative_genes) / epoch_num)
         for i in tqdm.tqdm(range(epoch_num)):
             x, y = data_block_n(i, batch_size)
-            train_one_epoch(x, y, i,os_rate)
+            train_one_epoch(x, y, i, os_rate)
 
     for os_rate in os_rates:
         print(f"testing under rate {os_rate}")
-        average_pred = pd.DataFrame(columns=['model',  'Accuracy', "Precision", "Recall", "F1", "MCC"])
+        average_pred = pd.DataFrame(columns=['model', 'Accuracy', "Precision", "Recall", "F1", "MCC"])
         for classifier in tqdm(CLASSIFIER_NAMES):
-            for mdl in os.listdir(os.path.join(MODEL_DIR, classifier,os_rate)):
+            for mdl in os.listdir(os.path.join(MODEL_DIR, classifier, os_rate)):
                 for x, y, i in test_data():
                     model = pickle.load(open(os.path.join(MODEL_DIR, classifier, mdl), 'rb'))
                     pred = model.predict(x)
@@ -325,7 +327,8 @@ def main():
                                 f1_score(y, pred),
                                 matthews_corrcoef(y, pred)]
                     average_pred.loc[len(average_pred)] = scorings
-        average_pred.groupby('model').mean().round(5).to_csv(os.path.join("result",f"GAN_TEST_OS_{os_rate}.csv"), sep="\t")
+        average_pred.groupby('model').mean().round(5).to_csv(os.path.join("result", f"GAN_TEST_OS_{os_rate}.csv"),
+                                                             sep="\t")
         # average_pred.to_csv(os.path.join("result", "nosplit_test.csv"), index=True, sep="\t")
 
 

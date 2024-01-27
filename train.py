@@ -14,10 +14,10 @@ import os
 import warnings
 warnings.filterwarnings('ignore', category=UndefinedMetricWarning)
 
-DATA_DIR = os.path.join("data")
-MODEL_DIR = os.path.join("model","wgangp")
-MODEL_DIR_G = os.path.join(MODEL_DIR, "generator")
-MODEL_DIR_D = os.path.join(MODEL_DIR, "discriminator")
+DATA_DIR = os.path.join("path to your data")
+MODEL_DIR = os.path.join("path to save MODEL")
+MODEL_DIR_G = os.path.join("path to your generator")
+MODEL_DIR_D = os.path.join("path to your discriminator")
 if not os.path.exists(MODEL_DIR_G):
     os.makedirs(MODEL_DIR_G)
 if not os.path.exists(MODEL_DIR_D):
@@ -55,8 +55,8 @@ def main():
     positive_data = selected_data.loc[train_positive_genes].values
     unlabel_data = selected_data.loc[train_unlable_genes].values
 
-    ft = open(os.path.join(DATA_DIR, "test_positive_genes.txt"), "w")
-    fu = open(os.path.join(DATA_DIR, "test_negative_genes.txt"), "w")
+    ft = open(os.path.join(DATA_DIR, "path of test positive genes' name"), "w")
+    fu = open(os.path.join(DATA_DIR, "path of test negative genes' name"), "w")
 
     for gene in set(positive_genes).difference(train_positive_genes):
         ft.write(gene)

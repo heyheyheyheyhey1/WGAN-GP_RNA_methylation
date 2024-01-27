@@ -142,6 +142,7 @@ class WGANGP():
         cv_result = cross_validate(SVM_model, c2st_x, c2st_y, scoring=scorings, cv=5)
         acc, prec = cv_result["test_accuracy"].mean(), cv_result["test_precision"].mean()
 
+        # visualize samples
         # if epoch_num%5 == 0 :
         # tsne = TSNE(n_components=2, random_state=42, learning_rate=200, init="pca").fit_transform(c2st_x)
         # plt.figure()
